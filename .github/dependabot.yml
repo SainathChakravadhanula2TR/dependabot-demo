@@ -11,13 +11,18 @@
 #     It will NOT open PRs for major version bumps (e.g., 2.x → 3.x) because
 #     major versions almost always contain breaking changes that need careful
 #     human planning.
-#   - Groups multiple small updates into a single PR so we get one tidy PR
-#     instead of 10 separate ones.
+#   - Groups all updates into a single PR so we get one tidy PR instead of
+#     many separate ones.
 #   - Caps open PRs at 10 so the PR queue never gets overwhelming.
 #
 # HOW TO ENABLE THIS:
 #   Go to your repo → Settings → Code security and analysis → enable
 #   "Dependabot version updates". GitHub will detect this file automatically.
+#
+# NOTE ON LABELS:
+#   The labels below ("dependencies", "python", "automated") must be created
+#   manually in your repo first: GitHub → Issues → Labels → New label.
+#   Until they exist, Dependabot will skip applying them (PRs still open fine).
 # =============================================================================
 
 version: 2
@@ -37,50 +42,46 @@ updates:
 
     # -------------------------------------------------------------------------
     # CRITICAL: Only allow minor and patch updates.
-    # Major version updates (e.g. Flask 2 → 3) often have breaking changes
-    # and should be done manually after reading the migration guide.
+    # We use `allow` (whitelist) rather than `ignore` (blacklist) because pip
+    # packages don't always follow strict semver, which can cause `ignore` with
+    # update-types to misclassify major bumps and let them through.
+    # Using `allow` is more reliable: if it's not minor or patch, it's excluded.
     # -------------------------------------------------------------------------
-    ignore:
+    allow:
       - dependency-name: "*"
         update-types:
-          - "version-update:semver-major"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
     # -------------------------------------------------------------------------
-    # GROUPING: Bundle related updates into a single PR instead of one per
-    # package. This dramatically reduces PR noise.
+    # GROUPING: Bundle all updates into a single PR instead of one per package.
+    # No update-types filter on the group — the `allow` block above already
+    # ensures only minor/patch updates reach this point.
     # -------------------------------------------------------------------------
     groups:
-
-      # All production dependencies grouped into one PR
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-
-      # All development/testing tools grouped into a separate PR
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+      all-dependencies:
+        patterns:
+          - "*"
 
     # Cap the number of open Dependabot PRs to avoid queue overflow
     open-pull-requests-limit: 10
 
-    # Label all Dependabot PRs for easy filtering in the PR list
+    # Label all Dependabot PRs for easy filtering in the PR list.
+    # IMPORTANT: create these labels in GitHub (Issues → Labels) before
+    # Dependabot can apply them. They won't block PR creation if missing,
+    # but the labels won't appear until they exist.
     labels:
       - "dependencies"
       - "python"
       - "automated"
 
-    # Optional: assign a reviewer to all Dependabot PRs so they don't sit
-    # unreviewed. Uncomment and replace with your GitHub username or team.
+    # Optional: assign a reviewer so PRs don't sit unreviewed.
+    # Uncomment and replace with your GitHub username or team slug.
     # reviewers:
     #   - "your-github-username"
     #   - "your-org/your-team"
 
-    # Prefix the commit messages so they're easy to find in git log
+    # Prefix commit messages so they're easy to find in git log
     commit-message:
       prefix: "chore"
       include: "scope"
