@@ -1,0 +1,86 @@
+# =============================================================================
+# Dependabot Best Practices Configuration
+# =============================================================================
+# This file tells GitHub's Dependabot how to automatically manage dependency
+# updates for this repository.
+#
+# WHAT THIS FILE DOES:
+#   - Runs dependency checks once a week (Monday mornings) instead of daily
+#     so we don't get flooded with PRs every day.
+#   - Only opens PRs for minor and patch updates (e.g., 2.28.0 → 2.29.0).
+#     It will NOT open PRs for major version bumps (e.g., 2.x → 3.x) because
+#     major versions almost always contain breaking changes that need careful
+#     human planning.
+#   - Groups multiple small updates into a single PR so we get one tidy PR
+#     instead of 10 separate ones.
+#   - Caps open PRs at 10 so the PR queue never gets overwhelming.
+#
+# HOW TO ENABLE THIS:
+#   Go to your repo → Settings → Code security and analysis → enable
+#   "Dependabot version updates". GitHub will detect this file automatically.
+# =============================================================================
+
+version: 2
+
+updates:
+  # ---------------------------------------------------------------------------
+  # Python dependencies (pip / requirements.txt)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"                  # Where requirements.txt lives (repo root)
+
+    schedule:
+      interval: "weekly"            # Check once a week, not every day
+      day: "monday"                 # Run on Mondays
+      time: "09:00"                 # 9am UTC — start of workweek
+      timezone: "America/Chicago"   # Adjust to your team's timezone
+
+    # -------------------------------------------------------------------------
+    # CRITICAL: Only allow minor and patch updates.
+    # Major version updates (e.g. Flask 2 → 3) often have breaking changes
+    # and should be done manually after reading the migration guide.
+    # -------------------------------------------------------------------------
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+    # -------------------------------------------------------------------------
+    # GROUPING: Bundle related updates into a single PR instead of one per
+    # package. This dramatically reduces PR noise.
+    # -------------------------------------------------------------------------
+    groups:
+
+      # All production dependencies grouped into one PR
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # All development/testing tools grouped into a separate PR
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Cap the number of open Dependabot PRs to avoid queue overflow
+    open-pull-requests-limit: 10
+
+    # Label all Dependabot PRs for easy filtering in the PR list
+    labels:
+      - "dependencies"
+      - "python"
+      - "automated"
+
+    # Optional: assign a reviewer to all Dependabot PRs so they don't sit
+    # unreviewed. Uncomment and replace with your GitHub username or team.
+    # reviewers:
+    #   - "your-github-username"
+    #   - "your-org/your-team"
+
+    # Prefix the commit messages so they're easy to find in git log
+    commit-message:
+      prefix: "chore"
+      include: "scope"
